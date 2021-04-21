@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include<signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -15,12 +15,19 @@
 #include "find_min_max.h"
 #include "utils.h"
 
+void Myalarm(int val)
+{
+    printf("Death!");
+    kill(0,SIGKILL);
+}
 int main(int argc, char **argv) {
   int seed = -1;
   int array_size = -1;
   int pnum = -1;
   bool with_files = false;
 
+  signal(SIGALRM,Myalarm);
+  alarm(1);
   while (true) {
     int current_optind = optind ? optind : 1;
 
@@ -40,18 +47,19 @@ int main(int argc, char **argv) {
         switch (option_index) {
           case 0:
             seed = atoi(optarg);
-            // your code here
-            // error handling
+            if (seed<=0)
+                return(1);
             break;
           case 1:
             array_size = atoi(optarg);
-            // your code here
-            // error handling
+            if (array_size<=0)
+                return(1);
             break;
           case 2:
             pnum = atoi(optarg);
-            // your code here
-            // error handling
+            printf("pnum=%d\n",pnum);
+            if (pnum<=0)
+                return(1);
             break;
           case 3:
             with_files = true;
@@ -90,23 +98,62 @@ int main(int argc, char **argv) {
 
   struct timeval start_time;
   gettimeofday(&start_time, NULL);
+  int Min[2];
+  int Max[2];
+  FILE* m;
+  FILE* M;
+  if(with_files){
+  m=fopen("min.txt","w");
+  M=fopen("max.txt","w");
+  }
+  else
+  {
+    
+    pipe(Min);
+    pipe(Max);
+  }
 
-  for (int i = 0; i < pnum; i++) {
+
+  for (int i = 0; i < pnum; i++) 
+  {
     pid_t child_pid = fork();
-    if (child_pid >= 0) {
+    if (child_pid >= 0) 
+    {
       // successful fork
       active_child_processes += 1;
-      if (child_pid == 0) {
-        // child process
+      if (child_pid == 0) 
+      {
+          int min=INT_MAX;
+          int max=INT_MIN;
+          
+        for(int j=array_size/pnum*i;j<array_size/pnum*(i+1);j++)
+        {
+            if(array[j]>max)
+                max=array[j];
+            if(array[j]<min)
+                min=array[j];   
+        }
+        
+        if(with_files)
+        {
 
-        // parallel somehow
+        fprintf(m,"%d\n",min);
+        fprintf(M,"%d\n",max);
 
-        if (with_files) {
-          // use files here
-        } else {
-          // use pipe here
+        }
+        else{
+            
+            close(Min[0]);
+            close(Max[0]);
+            write(Max[1],&max,sizeof(max));
+            write(Min[1],&min,sizeof(min));
+            printf("+++min====>%d\n",min);
+            printf("+++max====>%d\n",max);
         }
         return 0;
+        
+
+
       }
 
     } else {
@@ -114,10 +161,14 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
-
-  while (active_child_processes > 0) {
-    // your code here
-
+if(with_files)
+{
+  fclose(m);
+  fclose(M);
+}
+  while (active_child_processes > 0) 
+  {
+    wait(0);
     active_child_processes -= 1;
   }
 
@@ -125,19 +176,48 @@ int main(int argc, char **argv) {
   min_max.min = INT_MAX;
   min_max.max = INT_MIN;
 
-  for (int i = 0; i < pnum; i++) {
-    int min = INT_MAX;
-    int max = INT_MIN;
 
-    if (with_files) {
-      // read from files
-    } else {
-      // read from pipes
+
+    if (with_files)
+    {
+
+        m=fopen("min.txt","r");
+        M=fopen("max.txt","r");
+        for (int i = 0; i < pnum; i++)
+        {
+            int min = INT_MAX;
+            int max = INT_MIN;
+            fscanf(m,"%d",&min);
+            fscanf(M,"%d",&max);
+
+            if (min < min_max.min) min_max.min = min;
+            if (max > min_max.max) min_max.max = max;
+        }
+        fclose(M);
+        fclose(m);
+        
+    } 
+    else {
+      close(Min[1]);
+      close(Max[1]);
+            
+        for (int i = 0; i < pnum; i++)
+        {
+            int min = INT_MAX;
+            int max = INT_MIN;
+            read(Max[0],&max,sizeof(max));
+            read(Min[0],&min,sizeof(min));
+            printf("min====>%d\n",min);
+            printf("max====>%d\n",max);
+
+            if (min < min_max.min) min_max.min = min;
+            if (max > min_max.max) min_max.max = max;
+        }
+       close(Min[0]);
+       close(Max[0]);
     }
 
-    if (min < min_max.min) min_max.min = min;
-    if (max > min_max.max) min_max.max = max;
-  }
+    
 
   struct timeval finish_time;
   gettimeofday(&finish_time, NULL);
