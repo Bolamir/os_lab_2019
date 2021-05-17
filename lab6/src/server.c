@@ -181,8 +181,8 @@ int main(int argc, char **argv) {
       struct FactorialArgs args[tnum];
       for (uint32_t i = 0; i < tnum; i++) {
         
-        args[i].begin = end/tnum*i+1;
-        args[i].end = end/tnum*(i+1)+1;
+        args[i].begin = (end-begin)*i/tnum+begin;
+        args[i].end = (end-begin)*(i+1)/tnum+begin;
         args[i].mod = mod;
 
         if (pthread_create(&threads[i], NULL, ThreadFactorial,
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
 
     shutdown(client_fd, SHUT_RDWR);
     close(client_fd);
-    printf("Deth port %d",port);
+    printf("Deth port %d\n",port);
 
   return 0;
 }

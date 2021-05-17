@@ -1,2 +1,6 @@
 #!/bin/bash
-./server --port 2003 --tnum 2
+./server --port 2003 --tnum 2 &
+./server --port 2004 --tnum 2 &
+./server --port 2005 --tnum 2 &
+./server --port 2006 --tnum 2 &
+./client --k 15 --mod 15 --servers servers.txt

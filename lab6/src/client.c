@@ -155,8 +155,8 @@ int main(int argc, char **argv) {
     // TODO: for one server
     // parallel between servers
     
-    uint64_t begin = mod/servers_num*i+1;
-    uint64_t end = mod/servers_num*(i+1)+1;
+    uint64_t begin = mod*i/servers_num+1;
+    uint64_t end = mod*(i+1)/servers_num+1;
 
     char task[sizeof(uint64_t) * 3];
     memcpy(task, &begin, sizeof(uint64_t));
