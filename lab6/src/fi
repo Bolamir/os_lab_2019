@@ -1,0 +1,2 @@
+#!/bin/bash
+./server --port 2003 --tnum 2
