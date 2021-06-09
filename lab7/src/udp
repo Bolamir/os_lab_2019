@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./udpserver --port 2006 --bs 1024 &
+./udpclient 127.0.0.1 --port 2006 --bs 1024

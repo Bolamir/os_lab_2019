@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./tcpserver --port 2006 --bs 100 &
+./tcpclient 127.0.0.1 --port 2006 --bs 100

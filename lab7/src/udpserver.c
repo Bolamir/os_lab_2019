@@ -7,22 +7,76 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <getopt.h>
+#include <stdbool.h>
 
-#define SERV_PORT 20001
-#define BUFSIZE 1024
+
 #define SADDR struct sockaddr
 #define SLEN sizeof(struct sockaddr_in)
 
-int main() {
+int main(int argc, char* argv[]) {
   int sockfd, n;
-  char mesg[BUFSIZE], ipadr[16];
+  char ipadr[16];
   struct sockaddr_in servaddr;
   struct sockaddr_in cliaddr;
+  int SERV_PORT=-1;
+  int BUFSIZE=-1;
+
+while (true) {
+    int current_optind = optind ? optind : 1;
+
+    static struct option options[] = {{"port", required_argument, 0, 0},
+                                      {"bs", required_argument, 0, 0},
+                                     
+                                      {0, 0, 0, 0}};
+
+    int option_index = 0;
+    int c = getopt_long(argc, argv, "", options, &option_index);
+
+    if (c == -1)
+      break;
+
+    switch (c) {
+    case 0: {
+      switch (option_index) {
+      case 0:
+        SERV_PORT=atoi(optarg);
+        if(SERV_PORT <0)
+        {
+            printf("mod mut be positiv number");
+            return 1;
+        }
+        break;
+      case 1:
+        BUFSIZE=atoi(optarg);
+        if(BUFSIZE <0)
+        {
+            printf("BUFSIZE must be positiv number");
+            return 1;
+        }
+
+        break;
+      
+     
+      default:
+        printf("Index %d is out of options\n", option_index);
+      }
+    } break;
+
+    case '?':
+      printf("Arguments error\n");
+      break;
+    default:
+      fprintf(stderr, "getopt returned character code 0%o?\n", c);
+    }
+  }
 
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     perror("socket problem");
     exit(1);
   }
+  char* mesg;
+  mesg=(char*)malloc(sizeof(char)*BUFSIZE);
 
   memset(&servaddr, 0, SLEN);
   servaddr.sin_family = AF_INET;
@@ -43,6 +97,7 @@ int main() {
       exit(1);
     }
     mesg[n] = 0;
+    printf("WORK\n");
 
     printf("REQUEST %s      FROM %s : %d\n", mesg,
            inet_ntop(AF_INET, (void *)&cliaddr.sin_addr.s_addr, ipadr, 16),
@@ -53,4 +108,5 @@ int main() {
       exit(1);
     }
   }
+  free(mesg);
 }
